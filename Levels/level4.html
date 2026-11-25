@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <title>Ares Base – Mars Base Builder</title>
+    <style>
+        :root {
+            --bg: #05070b;
+            --fg: #d7e3f0;
+            --ac: #5ad1ff;
+            --ok: #5dff9a;
+            --bad: #ff6a5a;
+            --pn: rgba(8, 14, 24, .74);
+            color-scheme: dark;
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--fg);
+            font: 11px/1.35 ui-monospace, Menlo, Consolas, monospace;
+            user-select: none
+        }
+
+        canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            display: block
+        }
+
+        canvas.th {
+            filter: grayscale(1) contrast(1.5) sepia(1) saturate(6) hue-rotate(-25deg)
+        }
+
+        .pn {
+            background: var(--pn);
+            border: 1px solid #2b4a66;
+            border-radius: 8px;
+            padding: 5px 8px;
+            backdrop-filter: blur(4px)
+        }
+
+        #hud>* {
+            position: fixed;
+            z-index: 5
+        }
+
+        #tl {
+            left: 8px;
+            top: calc(8px + env(safe-area-inset-top, 0px))
+        }
+
+        #tr {
+            right: 8px;
+            top: calc(8px + env(safe-area-inset-top, 0px));
+            min-width: 112px
+        }
+
+        #ob {
+            left: 50%;
+            transform: translateX(-50%);
+            top: calc(8px + env(safe-area-inset-top, 0px));
+            max-width: 40vw;
+            text-align: center;
+            font-size: 11px
+        }
+
+        #pal {
+            left: 50%;
+            transform: translateX(-50%);
+            top: 70px;
+            display: none;
+            gap: 4px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 62vw
+        }
+
+        #xr {
+            left: 8px;
+            top: 96px;
+            display: none
+        }
+
+        #lg {
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            text-align: center;
+            pointer-events: none
+        }
+
+        #lg div {
+            background: var(--pn);
+            border: 1px solid #2b4a66;
+            border-radius: 6px;
+            padding: 4px 8px;
+            margin-top: 3px
+        }
+
+        #br {
+            right: 8px;
+            bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: flex-end;
+            max-width: 240px
+        }
+
+        #js {
+            left: 18px;
+            bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: rgba(90, 209, 255, .1);
+            border: 2px solid #2f6a96;
+            touch-action: none
+        }
+
+        #kn {
+            position: absolute;
+            left: 35px;
+            top: 35px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(90, 209, 255, .5)
+        }
+
+        button {
+            background: #12304a;
+            color: var(--fg);
+            border: 1px solid #2f6a96;
+            border-radius: 6px;
+            padding: 7px 10px;
+            font: inherit;
+            min-height: 34px;
+            cursor: pointer
+        }
+
+        button:disabled {
+            opacity: .5
+        }
+
+        button.on {
+            background: #1d6b8f;
+            border-color: var(--ac)
+        }
+
+        .ed {
+            color: var(--ac);
+            border-bottom: 1px dotted var(--ac);
+            cursor: text
+        }
+
+        .in {
+            width: 44px;
+            font: inherit;
+            background: #001;
+            color: var(--ac);
+            border: 1px solid var(--ac)
+        }
+
+        .bar2 {
+            display: inline-block;
+            width: 64px;
+            height: 6px;
+            background: #223;
+            vertical-align: middle
+        }
+
+        .bar2 i {
+            display: block;
+            height: 100%;
+            width: 100%;
+            background: var(--ok)
+        }
+
+        .sm {
+            opacity: .6;
+            font-size: 9px
+        }
+
+        #md {
+            position: fixed;
+            z-index: 30;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: min(92vw, 560px);
+            max-height: 88vh;
+            overflow: auto;
+            display: none;
+            font-size: 12px
+        }
+
+        #md h3 {
+            margin: 0 0 4px;
+            color: var(--ac)
+        }
+
+        #md p {
+            margin: 4px 0
+        }
+
+        .bar {
+            position: relative;
+            height: 16px;
+            background: #1b2836;
+            border-radius: 8px;
+            margin: 12px 0
+        }
+
+        .bar i {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: #2e9d5a99;
+            border-radius: 8px
+        }
+
+        .bar b {
+            position: absolute;
+            top: -3px;
+            width: 6px;
+            height: 22px;
+            background: #fff;
+            border-radius: 3px;
+            left: 50%
+        }
+
+        input[type=range] {
+            width: 100%
+        }
+
+        .big {
+            font-size: 20px;
+            margin: 10px 0;
+            text-align: center
+        }
+
+        .bins {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px
+        }
+
+        #thv {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 4;
+            pointer-events: none;
+            box-shadow: inset 0 0 120px #f50;
+            color: #fa6;
+            text-align: center;
+            padding-top: 50px;
+            letter-spacing: 3px
+        }
+
+        #rot {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99;
+            background: var(--bg);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            font-size: 16px;
+            text-align: center
+        }
+
+        #rot span {
+            font-size: 64px;
+            animation: r 2s infinite
+        }
+
+        @keyframes r {
+
+            50%,
+            100% {
+                transform: rotate(-90deg)
+            }
+        }
+
+        @media (orientation:portrait) and (pointer:coarse) {
+            #rot {
+                display: flex
+            }
+        }
+
+        #fade {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 14px
+        }
+
+        #fade.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        .gg {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin: 8px 0
+        }
+
+        .gc {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-align: center
+        }
+
+        .gc button {
+            padding: 3px 2px;
+            min-height: 30px;
+            font-size: 10px
+        }
+
+        .gn {
+            font-size: 11px;
+            white-space: nowrap
+        }
+
+        .gc.bad .gn {
+            color: var(--bad)
+        }
+
+        .gt {
+            position: relative;
+            height: clamp(70px, 24vh, 130px);
+            background: #1b2836;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #2b4a66
+        }
+
+        .gt .bd {
+            position: absolute;
+            left: 0;
+            right: 0;
+            box-sizing: border-box;
+            background: rgba(46, 157, 90, .35);
+            border-top: 1px dashed #5dff9a;
+            border-bottom: 1px dashed #5dff9a
+        }
+
+        .gt .fl {
+            position: absolute;
+            left: 18%;
+            right: 18%;
+            bottom: 0;
+            background: var(--ok);
+            border-radius: 4px 4px 0 0
+        }
+
+        .gv {
+            font-size: 10px;
+            opacity: .8
+        }
+
+        .ev {
+            min-height: 20px;
+            padding: 3px 6px;
+            border-radius: 6px;
+            background: #12202f;
+            text-align: center;
+            color: #ffd070
+        }
+
+        .ev.al {
+            background: #4a1612;
+            color: #ff9a8a;
+            animation: bl .5s infinite alternate
+        }
+
+        @keyframes bl {
+            to {
+                opacity: .6
+            }
+        }
+
+        .bar2.wide {
+            width: 140px;
+            height: 8px
+        }
+
+        #bots {
+            left: 8px;
+            bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+            display: none;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+            max-width: 260px
+        }
+
+        @media (pointer:fine) {
+            #bots {
+                bottom: calc(12px + env(safe-area-inset-bottom, 0px))
+            }
+        }
+
+        button.fin {
+            background: #1d8f4a;
+            border-color: var(--ok);
+            font-weight: bold;
+            animation: bl .6s infinite alternate
+        }
+
+        /* ---- materials inventory panel ---- */
+        #mat {
+            left: 8px;
+            top: 160px;
+            display: none;
+            min-width: 130px
+        }
+
+        #mat .mt {
+            font-size: 10px;
+            margin: 1px 0;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px
+        }
+
+        #mat .mt span {
+            color: var(--ac)
+        }
+
+        #mat .mt span.low {
+            color: var(--bad)
+        }
+
+        #mat .mh {
+            font-size: 9px;
+            opacity: .6;
+            margin-bottom: 3px
+        }
+
+        /* cost badge on palette buttons */
+        .cost {
+            display: block;
+            font-size: 8px;
+            opacity: .75;
+            line-height: 1.4;
+            margin-top: 2px
+        }
+
+        /* ---- compact builder menu for phones / small screens ---- */
+        #pi { left: 50%; transform: translateX(-50%); top: 104px; display: none; font-size: 10px; text-align: center; max-width: 62vw; pointer-events: none }
+        @media (pointer:coarse), (max-height:500px) {
+            #pal {
+                top: calc(50px + env(safe-area-inset-top, 0px));
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                max-width: 56vw;
+                padding: 3px 4px;
+                gap: 3px
+            }
+            #pal::-webkit-scrollbar { display: none }
+            #pal button {
+                flex: 0 0 auto;
+                min-height: 32px;
+                min-width: 44px;
+                padding: 3px 6px;
+                font-size: 15px;
+                line-height: 1.1;
+                text-align: center
+            }
+            #pal button .nm, #pal button .sm, #pal button .cost { display: none }
+            #pal button b { display: block; font-size: 9px; font-weight: normal; opacity: .85 }
+            #pi { top: calc(50px + 42px + env(safe-area-inset-top, 0px)) }
+            #pi.show { display: block }
+            #xr { top: calc(96px + 4px) }
+        }
+        @media (pointer:fine) and (min-height:501px) { #pi { display: none !important } }
+
+        /* ---- touch devices: move the builder-select bar beside the joystick so it never covers the materials panel ---- */
+        @media (pointer:coarse) {
+            #bots {
+                left: calc(138px + env(safe-area-inset-left, 0px));
+                bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+                flex-wrap: nowrap;
+                max-width: none;
+                gap: 4px;
+                padding: 3px 5px
+            }
+            #bots .sm { display: none }
+            #bots button { min-height: 32px; padding: 3px 8px }
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="c"></canvas>
+    <div id="thv">☢ RADIATION SCAN – THERMAL VISION · orange glow = surface hot spot</div>
+    <div id="hud">
+        <div id="tl" class="pn">
+            <div>ENERGY <b class="ed" data-k="en"></b>% <span class="bar2"><i id="fe"></i></span></div>
+            <div>SIGNAL <b data-k="sig"></b>% <span class="bar2"><i id="fs"></i></span></div>
+            <div>SUNLIGHT <b data-k="sun"></b>%</div>
+            <div class="sm">Double-click / double-tap dotted values to edit</div>
+        </div>
+        <div id="tr" class="pn"></div>
+        <div id="ob" class="pn"></div>
+        <div id="pal" class="pn"></div>
+        <div id="pi" class="pn"></div>
+        <div id="xr" class="pn">X-RAY ▸ <span style="color:#2bd96b">■</span> Li-ion battery · <span
+                style="color:#ff7a1a">■</span> RTG heater<br><span style="color:#3b7bff">■</span> flight computer ·
+            <span style="color:#d98a3a">■</span> wheel-hub motors<br><span style="color:#c06bff">■</span> purple glow = buried thorium / uranium ore</div>
+        <div id="lg"></div>
+        <div id="js"><i id="kn"></i></div>
+        <div id="bots" class="pn"></div>
+        <div id="mat" class="pn">
+            <div class="mh">📦 MATERIALS</div>
+            <div class="mt">🪵 Wood   <span id="m_wood">0</span></div>
+            <div class="mt">🪨 Stone  <span id="m_stone">0</span></div>
+            <div class="mt">🪟 Glass  <span id="m_glass">0</span></div>
+            <div class="mt">💧 Water  <span id="m_water">0</span></div>
+        </div>
+        <div id="br"><button id="bD">▶ Deploy (B)</button><button id="bS">⬚ Select site</button><button id="bE">⚙ Action
+                (E)</button><button id="bT">☢ Thermal (T)</button><button id="bR">◎ X-ray (R)</button><button id="bZ" style="display:none">⟳ Rotate (Z)</button><button id="bP" style="display:none">🧱 Place (P)</button><button id="bF" class="fin" style="display:none">✔ Finalize Build</button></div>
+    </div>
+    <div id="md" class="pn"></div>
+    <div id="rot"><span>📱</span>
+        <p>Rotate your device to landscape<br>to play Ares Base</p>
+    </div>
+    <div id="fade"></div>
+<script>
+/* Nova Explorer: send the player back to the mission menu in ../index.html and award this mission's star */
+function novaExit(n){var p=new URLSearchParams(location.search),s=(p.get('s')||'').padEnd(4,'0').split('').slice(0,4);if(n>=1&&n<=4)s[n-1]='1';location.href='../index.html?s='+s.join('')}
+</script>
+<script>
+        (async function startSeleneBase() {
+            async function loadThree() {
+                if (window.THREE) return;
+                const sources = [
+                    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+                    'https://unpkg.com/three@0.128.0/build/three.min.js',
+                    'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'
+                ];
+                for (const src of sources) {
+                    try {
+                        await new Promise((resolve, reject) => {
+                            const script = document.createElement('script');
+                            script.src = src; script.async = true;
+                            script.onload = resolve;
+                            script.onerror = () => { script.remove(); reject(new Error('Could not load ' + src)); };
+                            document.head.appendChild(script);
+                        });
+                        if (window.THREE) return;
+                    } catch (error) { console.warn(error.message); }
+                }
+                throw new Error('Three.js failed to load from all available CDNs. Check your internet connection or allow the CDN in your browser.');
+            }
+            try { await loadThree(); }
+            catch (error) {
+                document.body.innerHTML = '<div style="padding:24px;color:#d7e3f0;background:#05070b;font:14px monospace"><h2>Ares Base could not load</h2><p>' + error.message + '</p></div>';
+                return;
+            }
+const T = THREE, $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+        const V = (x = 0, y = 0, z = 0) => new T.Vector3(x, y, z), cl = (v, a, b) => Math.max(a, Math.min(b, v));
+        let sd = 7; const rnd = () => (sd = sd * 16807 % 2147483647) / 2147483647;
+        const S = { en: 100, sig: 100, sun: 0, spd: 0, slp: 0, lat: 0, lon: 0, tmp: 0, rad: .05, o2: 21, h2o: 60, cab: 22, pwr: 0, dose: .67, crew: 4 };
+        /* ---------- procedural Martian terrain ---------- */
+        const hs = (x, y, z) => { const n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453; return n - Math.floor(n) };
+        function vn(x, y, z) {
+            const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z), s = t => t * t * (3 - 2 * t), ux = s(x - ix), uy = s(y - iy), uz = s(z - iz), L = (a, b, t) => a + (b - a) * t, g = (i, j, k) => hs(ix + i, iy + j, iz + k);
+            return L(L(L(g(0, 0, 0), g(1, 0, 0), ux), L(g(0, 1, 0), g(1, 1, 0), ux), uy), L(L(g(0, 0, 1), g(1, 0, 1), ux), L(g(0, 1, 1), g(1, 1, 1), ux), uy), uz)
+        }
+        const R = 300, RK = R / 150, CR = [];  /* planet radius: 2x the original 150 m world; RK keeps gameplay gradients (sun/signal) balanced */ for (let i = 0; i < 110; i++) { const a = .02 + Math.pow(rnd(), 2.2) * .16; CR.push([V(rnd() - .5, rnd() - .5, rnd() - .5).normalize(), a, Math.cos(a * 1.9)]) }
+        let AMP = 1;
+        function H(d) {
+            AMP = cl((vn(d.x * 2.2 + 9, d.y * 2.2, d.z * 2.2) - .36) / .22, .1, 1);
+            let h = (vn(d.x * 9, d.y * 9, d.z * 9) - .5) * 2.4 * AMP + (vn(d.x * 38, d.y * 38, d.z * 38) - .5) * .5 * (.2 + AMP * .5);
+            for (const c of CR) { const q = d.dot(c[0]); if (q < c[2]) continue; const x = Math.acos(Math.min(1, q)) / c[1], dp = c[1] * R * .2; h += x < 1 ? dp * (x * x - .7) : dp * .3 * Math.exp(-(x - 1) * (x - 1) * 18) } return h
+        }
+        const surf = v => { const d = v.clone().normalize(); return d.multiplyScalar(R + H(d)) };
+        function off(c, dist, ang) { c = c.clone().normalize(); const t = Math.abs(c.y) < .9 ? V(0, 1, 0) : V(1, 0, 0), a = t.cross(c).normalize(), b = c.clone().cross(a), dir = a.multiplyScalar(Math.cos(ang)).addScaledVector(b, Math.sin(ang)); return surf(c.multiplyScalar(R).addScaledVector(dir, dist)) }
+        function slope(p, f) { const u = p.clone().normalize(), r = u.clone().cross(f), h0 = H(u); let m = 0; for (let i = 0; i < 8; i++) { const a = i * .785, q = p.clone().addScaledVector(f, Math.cos(a) * 9).addScaledVector(r, Math.sin(a) * 9); m = Math.max(m, Math.abs(H(q.normalize()) - h0)) } return Math.atan(m / 9) * 57.3 }
+        /* ---------- renderer / scene ---------- */
+        const cv = $('#c'); let ren; try { ren = new T.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' }); } catch (err) { document.body.innerHTML = '<div style="padding:24px;color:#d7e3f0;background:#05070b;font:14px monospace"><h2>WebGL is unavailable</h2><p>Ares Base needs browser hardware acceleration. Enable hardware acceleration in your browser settings, update your graphics driver, and reopen this page.</p></div>'; throw err; } ren.setPixelRatio(Math.min(devicePixelRatio, 'ontouchstart' in window ? 1.5 : 2));
+        ren.outputEncoding = T.sRGBEncoding; ren.toneMapping = T.ACESFilmicToneMapping; ren.toneMappingExposure = 1.2; ren.shadowMap.enabled = true; ren.shadowMap.type = T.PCFSoftShadowMap;
+        cv.addEventListener('webglcontextlost', e => { e.preventDefault(); toast('Graphics context lost. Try reloading the page.', 8000) });
+        const scene = new T.Scene(), camera = new T.PerspectiveCamera(55, 1, .3, 9000);
+        function rs() { ren.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix() } addEventListener('resize', rs); rs();
+        const LD = V(1, 0, 0), ED = V(.92, .39, 0).normalize();
+        const sun = new T.DirectionalLight(0xffe2c0, 2.4); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const sc = sun.shadow.camera; sc.left = sc.bottom = -55; sc.right = sc.top = 55; sc.near = 1; sc.far = 320; sun.shadow.bias = -.0006; sun.shadow.normalBias = .4; const hemi = new T.HemisphereLight(0xe0a07c, 0x4a2216, .5); scene.add(sun, sun.target, hemi);
+        /* ---------- Martian sky: dusty gradient dome, red haze, night stars, Phobos, tiny Earth ---------- */
+        const FOG_DENSITY = .0065;   /* red haze thickness – raise for a thicker dust storm, lower for clearer air */
+        const FOG_DAY = new T.Color(0xb4603c), FOG_NIGHT = new T.Color(0x1c0c09), ZEN_DAY = new T.Color(0x70392a), ZEN_NIGHT = new T.Color(0x06030a);
+        scene.fog = new T.FogExp2(FOG_DAY.clone(), FOG_DENSITY);
+        const skyMat = new T.ShaderMaterial({
+            side: T.BackSide, depthWrite: false, depthTest: false, fog: false,
+            uniforms: { uUp: { value: V(0, 1, 0) }, uSun: { value: LD.clone() }, uHor: { value: FOG_DAY.clone() }, uZen: { value: ZEN_DAY.clone() }, uDay: { value: 1 } },
+            vertexShader: 'varying vec3 vD; void main(){ vD=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+            fragmentShader: 'uniform vec3 uUp,uSun,uHor,uZen; uniform float uDay; varying vec3 vD; void main(){ vec3 d=normalize(vD); float h=clamp(dot(d,uUp),0.,1.); vec3 c=mix(uHor,uZen,pow(h,.55)); float s=max(dot(d,normalize(uSun)),0.); c+=vec3(1.,.82,.6)*(pow(s,6.)*.28+pow(s,80.)*.7)*uDay; gl_FragColor=vec4(c,1.); }'
+        });
+        const sky = new T.Mesh(new T.SphereGeometry(5500, 32, 16), skyMat); sky.renderOrder = -10; sky.frustumCulled = false; scene.add(sky);
+        const starMat = new T.PointsMaterial({ size: 1.7, sizeAttenuation: false, color: 0xffffff, transparent: true, opacity: 0, fog: false, depthWrite: false });
+        { const p = new Float32Array(4500); for (let i = 0; i < 1500; i++) { const v = V(rnd() - .5, rnd() - .5, rnd() - .5).normalize().multiplyScalar(6000); p.set([v.x, v.y, v.z], i * 3) } const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(p, 3)); scene.add(new T.Points(g, starMat)) }
+        {
+            /* Earth is only a bright blue-white dot from Mars (still the target of the SIGNAL meter) */
+            const e = new T.Mesh(new T.SphereGeometry(14, 16, 12), new T.MeshBasicMaterial({ color: 0xa8d8ff, toneMapped: false, fog: false })); e.position.copy(ED).multiplyScalar(3000); scene.add(e);
+            /* the Sun looks ~2/3 as wide from Mars */
+            const s = new T.Mesh(new T.SphereGeometry(31, 16, 16), new T.MeshBasicMaterial({ color: 0xfff0d8, toneMapped: false, fog: false })); s.position.copy(LD).multiplyScalar(5000); scene.add(s);
+            /* Phobos – a lumpy potato of a moon */
+            const pg = new T.IcosahedronGeometry(46, 3), pp = pg.attributes.position, q = V();
+            for (let i = 0; i < pp.count; i++) { q.fromBufferAttribute(pp, i); const n = q.clone().normalize(); q.multiplyScalar(.85 + (vn(n.x * 3 + 5, n.y * 3, n.z * 3) - .5) * .5); pp.setXYZ(i, q.x, q.y, q.z) } pg.computeVertexNormals();
+            const ph0 = new T.Mesh(pg, new T.MeshStandardMaterial({ color: 0x8c7b6e, roughness: 1, metalness: 0, fog: false }));
+            const u0 = V(.55, .2, .81).normalize(), f0_ = V(0, 1, 0).addScaledVector(u0, -u0.y).normalize(), r0 = u0.clone().cross(f0_);
+            ph0.position.copy(f0_.multiplyScalar(Math.cos(.5)).addScaledVector(r0, Math.sin(.5)).multiplyScalar(Math.cos(.26)).addScaledVector(u0, Math.sin(.26))).multiplyScalar(3600); ph0.scale.set(1.3, .95, 1); scene.add(ph0)
+        }
+        const tc = document.createElement('canvas'); tc.width = tc.height = 512; {
+            const x = tc.getContext('2d'); x.fillStyle = '#c4c0bc'; x.fillRect(0, 0, 512, 512);
+            for (let i = 0; i < 30000; i++) { const g = 120 + Math.random() * 135 | 0; x.fillStyle = `rgba(${g},${g},${g},.5)`; const s = Math.random() * 2.5 + .5; x.fillRect(Math.random() * 512, Math.random() * 512, s, s) }
+            for (let i = 0; i < 60; i++) { x.fillStyle = 'rgba(0,0,0,.06)'; x.beginPath(); x.arc(Math.random() * 512, Math.random() * 512, 10 + Math.random() * 30, 0, 7); x.fill() }
+        }
+        const tx = new T.CanvasTexture(tc); tx.wrapS = tx.wrapT = T.RepeatWrapping; tx.repeat.set(180, 90); tx.anisotropy = 8; tx.encoding = T.sRGBEncoding;
+        const tg = new T.SphereGeometry(R, 540, 270), TP = tg.attributes.position, TC = new Float32Array(TP.count * 3), dv = V();
+        for (let i = 0; i < TP.count; i++) { dv.fromBufferAttribute(TP, i).normalize(); const h = H(dv), c = (.22 + .26 * AMP + (vn(dv.x * 60, dv.y * 60, dv.z * 60) - .5) * .1) * 1.2, m = cl((vn(dv.x * 4 + 20, dv.y * 4, dv.z * 4) - .42) * 4, 0, 1); TP.setXYZ(i, dv.x * (R + h), dv.y * (R + h), dv.z * (R + h)); /* rust-orange dust plains blending into darker basalt patches */ TC.set([c * (1 - .38 * m), c * (.5 - .12 * m), c * (.27 - .06 * m)], i * 3) }
+        tg.setAttribute('color', new T.BufferAttribute(TC, 3)); tg.computeVertexNormals();
+        const terr = new T.Mesh(tg, new T.MeshStandardMaterial({ vertexColors: true, map: tx, bumpMap: tx, bumpScale: 2.5, roughness: 1, metalness: 0 })); terr.castShadow = terr.receiveShadow = true; scene.add(terr);
+        /* ---------- models ---------- */
+        const M = (c, m = .3, r = .6, o = {}) => new T.MeshStandardMaterial({ color: c, metalness: m, roughness: r, ...o });
+        function mesh(p, geo, mat, x = 0, y = 0, z = 0, rx = 0, rz = 0) { const o = new T.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx, 0, rz); o.castShadow = o.receiveShadow = true; p.add(o); return o }
+        const cyl = (r, h, s = 20, r2 = r) => new T.CylinderGeometry(r2, r, h, s), bx = (a, b, c) => new T.BoxGeometry(a, b, c);
+        function pose(o, p, f, ex = 1.4, ez = 1.6) {
+            const u = p.clone().normalize(), x0 = u.clone().cross(f).normalize(),
+            pF = surf(p.clone().addScaledVector(f, ez)), pB = surf(p.clone().addScaledVector(f, -ez)), pR = surf(p.clone().addScaledVector(x0, ex)), pL = surf(p.clone().addScaledVector(x0, -ex)),
+            A = pF.sub(pB), B = pR.sub(pL), n = A.clone().cross(B).normalize(), z = A.sub(n.clone().multiplyScalar(A.dot(n))).normalize(), x = n.clone().cross(z);
+            o.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(x, n, z)); o.position.copy(p).addScaledVector(n, .25)
+        }
+        const stand = (o, p, yaw = 0) => { const n = p.clone().normalize(); o.quaternion.setFromUnitVectors(V(0, 1, 0), n).multiply(new T.Quaternion().setFromAxisAngle(V(0, 1, 0), yaw)); o.position.copy(p).addScaledVector(n, -.1) };
+        const rover = new T.Group(), shell = new T.Group(), inner = new T.Group(), shm = [], wheels = []; rover.add(shell, inner); rover.visible = false; scene.add(rover);
+        {
+            const sm = (c, m, r) => { const k = M(c, m, r, { transparent: true }); shm.push(k); return k }, bd = sm(0xe8e8e8, .4, .45), dk = sm(0x1a2a55, .8, .3), gy = sm(0x8a8f99, .9, .3);
+            mesh(shell, bx(2.2, .9, 3.4), bd, 0, 1.55, 0); mesh(shell, bx(2.9, .08, 2.6), dk, 0, 2.15, -.2); mesh(shell, cyl(.07, 1.6), gy, 0, 2.9, 1.2); mesh(shell, bx(.8, .35, .4), bd, 0, 3.8, 1.2);
+            mesh(shell, new T.SphereGeometry(.8, 16, 8, 0, 6.283, 0, 1.1), bd, 0, 2.6, -1.4, -1);
+            const wg = cyl(.55, .45, 20); wg.rotateZ(Math.PI / 2); const wm = sm(0x222222, .2, .9);
+            for (const x of [-1.45, 1.45]) for (const z of [-1.3, 0, 1.3]) { wheels.push(mesh(rover, wg, wm, x, .55, z)); mesh(inner, cyl(.22, .5, 12), M(0xd98a3a, .8, .3, { emissive: 0x4a2a08 }), x, .55, z, 0, 1.5708); mesh(shell, bx(1, .15, .2), gy, x / 1.45 * .95, 1, z) }
+            mesh(inner, bx(1.2, .4, 1), M(0x2bd96b, .3, .4, { emissive: 0x0a5a2a }), 0, 1.35, .6); mesh(inner, bx(.9, .1, .9), M(0x3b7bff, .3, .4, { emissive: 0x1030a0 }), 0, 1.8, .5); mesh(inner, cyl(.3, .8, 16), M(0xff7a1a, .3, .4, { emissive: 0x802a00 }), 0, 1.5, -1);
+            const sp = new T.SpotLight(0xfff4dd, 3, 80, .5, .6); sp.position.set(0, 2, 1.8); sp.target.position.set(0, 0, 12); rover.add(sp, sp.target)
+        }
+        const lander = new T.Group(); let fl, pl, bell, flap, bayL; const LS = 2.6, PHI = Math.asin(1.74 / 4.16), H0 = 1.74 * LS; scene.add(lander); lander.scale.setScalar(LS);
+        {
+            const gold = M(0xc79a2c, .45, .4), amber = M(0xa8571a, .5, .45), blk = M(0x17171a, .4, .6), silver = M(0xc3c7cc, .5, .4),
+                white = M(0xe8eaec, .3, .5), gray = M(0x41454b, .5, .5), win = M(0x050c16, .9, .15), P8 = Math.PI / 8;
+            const add = (g, m, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => { const o = new T.Mesh(g, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.castShadow = o.receiveShadow = true; lander.add(o); return o };
+            const rod = (a, b, r, m) => { const d = b.clone().sub(a), o = new T.Mesh(new T.CylinderGeometry(r, r, d.length(), 8), m); o.position.copy(a).addScaledVector(d, .5); o.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); o.castShadow = true; lander.add(o); return o };
+
+            const goldD = gold.clone(); goldD.side = T.DoubleSide;
+            add(new T.CylinderGeometry(2.3, 2.3, 1.65, 8, 1, true), goldD, 0, 2.55, 0, 0, P8);
+            add(new T.CylinderGeometry(2.3, 2.3, .06, 8), gold, 0, 3.36, 0, 0, P8);
+            add(new T.CylinderGeometry(2.0, 2.0, .12, 8), gray, 0, 3.4, 0, 0, P8);
+            {
+                const hinge = new T.Group(); hinge.position.set(Math.sin(2.356) * 2.08, 1.74, Math.cos(2.356) * 2.08); hinge.rotation.y = 2.356; lander.add(hinge);
+                flap = new T.Group(); hinge.add(flap);
+                const dm = new T.Mesh(new T.CylinderGeometry(2.25, 2.25, .1, 8), blk); dm.position.z = -2.08; dm.rotation.y = P8; dm.castShadow = dm.receiveShadow = true; flap.add(dm);
+                for (let k = -3; k <= 3; k++) { const rb = new T.Mesh(new T.BoxGeometry(2.6, .03, .08), gray); rb.position.set(0, .06, -2.08 + k * .55); flap.add(rb); }
+                bayL = new T.PointLight(0xfff0c8, 0, 40); bayL.position.set(0, 2.6, 0); lander.add(bayL);
+            }
+            for (let k = 0; k < 8; k++) {
+                const t = k * Math.PI / 4, r = 2.3 * Math.cos(P8) + .04, m = k == 0 ? white : k % 2 ? amber : blk;
+                add(bx(1.45, 1.25, .08), m, Math.sin(t) * r, 2.55, Math.cos(t) * r, 0, t);
+            }
+            bell = add(new T.CylinderGeometry(.45, .95, 1.1, 16), gray, 0, 1.2, 0);
+
+            for (let i = 0; i < 4; i++) {
+                const th = i * Math.PI / 2, d = V(Math.sin(th), 0, Math.cos(th)), p = V(d.z, 0, -d.x);
+                const at = (r, y, s = 0) => V(0, y, 0).addScaledVector(d, r).addScaledVector(p, s);
+                const A = at(2.2, 3.05), F = at(4.7, .45), Mid = A.clone().lerp(F, .62);
+                rod(A, F, .12, gold);
+                rod(at(2.2, 1.9), Mid, .07, gray);
+                for (const s of [-1, 1]) rod(at(2.1, 2.0, s * 1.05), Mid, .06, gray);
+                add(new T.SphereGeometry(.14, 10, 8), gray, F.x, F.y, F.z);
+                add(new T.CylinderGeometry(.5, .95, .14, 20), silver, F.x, .07, F.z);
+                if (i === 0) {
+                    add(bx(1.3, .1, 1.0), gray, 0, 3.12, 2.7);
+                    for (const s of [-.32, .32]) rod(V(s, 3.0, 2.6), V(s, 1.22, 4.3), .035, white);
+                    for (let k = 0; k < 7; k++) { const t = (k + .5) / 7; add(cyl(.025, .64), white, 0, 3.0 - 1.78 * t, 2.6 + 1.7 * t, 0, 0, Math.PI / 2) }
+                }
+            }
+
+            add(new T.CylinderGeometry(1.55, 1.55, 2.3, 8), silver, 0, 4.6, .3, 0, P8);
+            add(bx(1.5, 1.7, 2.4), white, 2.0, 4.35, -.2);
+            add(new T.CylinderGeometry(.95, .95, 2.4, 6), silver, -2.0, 4.5, -.2, Math.PI / 2);
+            add(bx(2.7, 1.8, 1.5), silver, 0, 4.5, -1.5);
+            add(bx(2.72, .35, 1.52), blk, 0, 4.0, -1.5);
+            add(bx(.85, .95, .06), blk, 0, 4.2, 1.76);
+            add(bx(.5, .45, .1), win, -.65, 5.0, 1.78, .15, -.25, 0);
+            add(bx(.5, .45, .1), win, .65, 5.0, 1.78, .15, .25, 0);
+            add(new T.CylinderGeometry(.62, .62, .5, 16), white, 0, 5.95, .3);
+            add(new T.CylinderGeometry(.72, .72, .1, 16), gray, 0, 6.25, .3);
+
+            rod(V(-1.5, 5.6, .6), V(-1.7, 6.3, .5), .05, gray);
+            add(new T.SphereGeometry(.4, 14, 8, 0, 6.283, 0, 1.1), white, -1.75, 6.45, .45, -1.2);
+            rod(V(1.2, 5.4, -1.3), V(1.5, 6.2, -1.4), .05, gray);
+            add(new T.SphereGeometry(.75, 16, 8, 0, 6.283, 0, 1.1), white, 1.55, 6.35, -1.45, -1.9, .4);
+            add(cyl(.02, 1.6), white, .9, 6.25, -.8);
+
+            for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+                const x = sx * 3.15, y = 4.4, z = sz * 1.55, n = (px, py, pz, rx = 0, rz = 0) => add(new T.CylinderGeometry(.04, .13, .3, 8), blk, px, py, pz, rx, 0, rz);
+                rod(V(sx * 2.5, y, z), V(x, y, z), .06, gray); add(bx(.5, .45, .45), gray, x, y, z);
+                n(x, y + .37, z); n(x, y - .37, z, Math.PI); n(x + sx * .37, y, z, 0, -sx * Math.PI / 2); n(x, y, z + sz * .37, sz * Math.PI / 2);
+            }
+
+            fl = add(new T.ConeGeometry(.9, 6.5, 16), new T.MeshBasicMaterial({ color: 0xffb050, transparent: true, opacity: .75 }), 0, -.8, 0, Math.PI); fl.castShadow = false;
+            pl = new T.PointLight(0xffa050, 3, 50 * LS); pl.position.y = 1.0; lander.add(pl);
+        }
+        function mod(k) {
+            const g = new T.Group(), W = M(0xeeeeee, .3, .5), G = M(0x777c85, .8, .35), B = M(0x16306b, .9, .25);
+            if (k == 'hab') { mesh(g, cyl(2.2, 7), W, 0, 2.2, 0, 0, 1.5708); mesh(g, new T.SphereGeometry(2.2, 24, 16), W, 3.5, 2.2, 0); mesh(g, new T.SphereGeometry(2.2, 24, 16), W, -3.5, 2.2, 0); mesh(g, bx(3, .5, .2), M(0x222222, .1, .1, { emissive: 0xffd070 }), 0, 2.8, 2.15) }
+            else if (k == 'sol') { mesh(g, cyl(.1, 2.5), G, 0, 1.25, 0); mesh(g, bx(5, .08, 3), B, 0, 2.8, 0, -.5) }
+            else if (k == 'isru') { mesh(g, cyl(1, 3), G, -1.4, 1.5, 0); mesh(g, cyl(.9, 2.4), W, 1.4, 1.2, 0); mesh(g, bx(4, 1.2, 2), G, 0, .6, 2) }
+            else if (k == 'gre') { mesh(g, new T.SphereGeometry(3, 24, 12, 0, 6.283, 0, 1.5708), M(0x7fe0a0, .1, .2, { transparent: true, opacity: .5 }), 0, .4, 0); mesh(g, cyl(3, .4), W, 0, .2, 0); for (let i = 0; i < 5; i++)mesh(g, new T.ConeGeometry(.4, 1.2, 8), M(0x3fbf6a), Math.cos(i * 1.3) * 1.6, .9, Math.sin(i * 1.3) * 1.6) }
+            else if (k == 'com') { mesh(g, cyl(.15, 4), G, 0, 2, 0); mesh(g, new T.SphereGeometry(1.8, 16, 8, 0, 6.283, 0, 1), W, 0, 4.2, 0, -1.1); mesh(g, cyl(.05, 1.6), G, 0, 4.6, .8, -1.1) }
+            else if (k == 'lab') { mesh(g, bx(4, 2.2, 3), W, 0, 1.1, 0); mesh(g, cyl(.9, 1.2), G, 1, 2.7, 0); mesh(g, bx(1, 1.4, .1), M(0x222222, .1, .1, { emissive: 0x66ccff }), -1, 1.1, 1.55) }
+            else { const m = mesh(g, new T.SphereGeometry(3.5, 16, 8), M(0x8a857d, 0, 1), 0, 0, 0); m.scale.set(1.6, .5, 1.2) }
+            return g
+        }
+        /* ---------- state ---------- */
+        let on = 0, ph = 0, T_ = 0, mo = 0, camY = .6, camP = .3, camD = 62, tP = .3, tD = 62, dep = -1, th = 0, rev = 0, auto = 0, FC = V(), jf = 0, jt = 0, gb = [], ZC = null, zr = null, sel = null, fr = 0, MK = [], HS = [], BL_ = [], siteOK = 0, ZR = 20, thPts = [], xrPts = [], BOTS = [], JOBS = [], ghost = null, gp = V(), gyaw = 0, CF = V(1, 0, 0), CRT = V(0, 0, 1);
+        const mv = { f: 0, t: 0 }, rv = { p: V(), f: V() }, up0 = V(.55, .2, .81).normalize(), P0 = surf(up0), U0 = P0.clone().normalize(), f0 = V(0, 1, 0).addScaledVector(U0, -U0.y).normalize();
+        rv.p = P0.clone(); rv.f = f0.clone();
+        const OB = ['DESCENT – Mars lander approaching the surface…', 'LANDED – press B (or Deploy) to release the rover.', 'SCOUT – find FLAT (<4°), sunlit ground with signal, then SCAN it: thermal (T) + X-ray (R) reveal radioactive rock. A radioactive base site fails the mission! Ring turns green when suitable → Select site.', 'SOIL SURVEY – drive to each blue beacon and press E to analyse', 'LIFE SUPPORT – keep every system in the green band', 'SHIELDING – design the regolith berm', 'BUILD', 'MISSION COMPLETE', 'MISSION FAILED'];
+        function setPh(n) {
+            ph = n; $('#bD').style.display = n == 1 ? '' : 'none'; $('#bS').style.display = n == 2 ? '' : 'none'; $('#bE').style.display = n == 3 ? '' : 'none'; $('#pal').style.display = n == 6 ? 'flex' : 'none'; if (n != 6) { $('#pi').classList.remove('show') }; $('#bots').style.display = n == 6 ? 'flex' : 'none'; $('#mat').style.display = n == 6 ? 'block' : 'none'; $('#bP').style.display = $('#bZ').style.display = n == 6 ? '' : 'none'; if (n != 6) $('#bF').style.display = 'none';
+            if (n == 2) { tP = 1.48; tD = 60; sr.visible = true } if (n == 3) { tP = .38; tD = 16; sr.visible = false } if (n >= 3 && n < 6) { tP = Math.min(tP, .5) } if (n == 6) { tP = .7; tD = 52; startBuild() } objT()
+        }
+        function objT() {
+            let t = OB[ph]; if (ph == 3) t += ` (${MK.filter(m => m.done).length}/4)`;
+            if (ph == 6) { const done = JOBS.filter(j => j.done).length, w = JOBS.filter(j => !j.done).map(j => `${BN[j.k]} ${Math.round(j.prog * 100)}%`).join(' · '); t = `BUILD ${done}/${TOTAL} – pick module · drag ghost · Place (P). WASD moves the selected builder (1–3).` + (w ? ` ⚒ ${w}` : '') + (done == TOTAL ? ' ✔ Press Finalize Build!' : '') }
+            $('#ob').textContent = t
+        }
+        function toast(m, ms = 3500) { const d = document.createElement('div'); d.textContent = m; $('#lg').appendChild(d); setTimeout(() => d.remove(), ms) }
+        function modal(h) { $('#md').innerHTML = h; $('#md').style.display = 'block'; mo = 1 } const closeM = () => { $('#md').style.display = 'none'; mo = 0 };
+        /* ---------- rings ---------- */
+        function ring(col) {
+            const N = 64, g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array((N + 1) * 6), 3)); const ix = []; for (let i = 0; i < N; i++) { const k = i * 2; ix.push(k, k + 1, k + 2, k + 1, k + 3, k + 2) } g.setIndex(ix);
+            const m = new T.Mesh(g, new T.MeshBasicMaterial({ color: col, side: 2, transparent: true, opacity: .8, toneMapped: false, depthWrite: false, fog: false })); m.frustumCulled = false; scene.add(m); return m
+        }
+        function fill(m, c, r) { const P = m.geometry.attributes.position, N = 64; for (let i = 0; i <= N; i++) { const a = i / N * 6.2832; for (let j = 0; j < 2; j++) { const p = off(c, r + (j ? .6 : -.6), a); p.addScaledVector(p.clone().normalize(), .4); P.setXYZ(i * 2 + j, p.x, p.y, p.z) } } P.needsUpdate = true }
+        const sr = ring(0xff4040); sr.visible = false;
+        const gk = document.createElement('canvas'); gk.width = gk.height = 64; { const x = gk.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, '#fff'); g.addColorStop(.3, 'rgba(255,200,80,.7)'); g.addColorStop(1, 'rgba(255,100,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64) }
+        const glow = new T.CanvasTexture(gk);
+        /* ---------- actions ---------- */
+        function deploy() {
+            if (ph != 1 || mo || dep >= 0) return;
+            lander.updateMatrixWorld(true);
+            const ex = new T.Vector3(Math.sin(2.356), 0, Math.cos(2.356)).applyQuaternion(lander.quaternion);
+            ex.addScaledVector(U0, -ex.dot(U0)).normalize();
+            rv.p = P0.clone(); rv.f = ex; rover.visible = true;
+            dep = 0; auto = 9.5; bell.visible = false; bayL.intensity = 4;
+            toast('Bay door opening – rover rolling out');
+        }
+        function updHS() { HS.forEach(h => h.s.visible = h.bur ? !!rev : !!th) }
+        function xray() { if (!rover.visible) return; rev ^= 1; shm.forEach(m => m.opacity = rev ? .12 : 1); $('#xr').style.display = rev ? 'block' : 'none'; $('#bR').classList.toggle('on', !!rev); updHS() }
+        function therm() { th ^= 1; cv.classList.toggle('th', !!th); $('#thv').style.display = th ? 'block' : 'none'; $('#bT').classList.toggle('on', !!th); updHS() }
+        function selSite() {
+            if (ph != 2 || mo) return; if (!siteOK) return toast('Unsuitable: need slope <4°, sunlight ≥20% and signal ≥50%');
+            const tOK = thPts.some(q => q.distanceTo(rv.p) < ZR + 8), xOK = xrPts.some(q => q.distanceTo(rv.p) < ZR + 8);
+            modal(`<h3>Finalize this base location?</h3><p>Terrain OK · slope ${S.slp.toFixed(1)}° · sunlight ${S.sun | 0}% · signal ${S.sig | 0}%.</p><p><b>Radiation check</b><br>Thermal scan (T) around here: ${tOK ? '<span style="color:var(--ok)">✔ done</span>' : '<span style="color:var(--bad)">✘ not done</span>'}<br>X-ray scan (R) around here: ${xOK ? '<span style="color:var(--ok)">✔ done</span>' : '<span style="color:var(--bad)">✘ not done</span>'}<br>Dosimeter now: ${S.rad.toFixed(2)} µSv/h</p><p class="sm">Thorium/uranium-rich rock is either on the surface (glows in thermal vision) or buried (shows in X-ray). If any of it lies inside the ${ZR} m base zone, the mission FAILS.</p><button id="go">Finalize site</button> <button id="no">Keep scouting</button>`);
+            $('#no').onclick = closeM; $('#go').onclick = () => { closeM(); lockSite() }
+        }
+        function lockSite() {
+            const hits = HS.filter(h => h.p.distanceTo(rv.p) < ZR + h.r * .5); if (hits.length) return fail(hits);
+            ZC = rv.p.clone(); zr = ring(0x39ff88); fill(zr, ZC, ZR); MK = [];
+            for (let i = 0; i < 4; i++) { const p = off(ZC, ZR * .6, i * 1.57 + .4), g = new T.Group(); mesh(g, cyl(.08, 2.2), M(0xaaaaaa, .8, .3), 0, 1.1, 0); const b = mesh(g, new T.SphereGeometry(.35, 12, 12), new T.MeshBasicMaterial({ color: 0x40c8ff, toneMapped: false, fog: false }), 0, 2.4, 0); stand(g, p); scene.add(g); MK.push({ p, b, done: 0, r: null }) }
+            toast('Radiation check passed – site locked. Study the soil inside the zone.', 5000); setPh(3)
+        }
+        function fail(h) {
+            mo = 1; setPh(8); HS.forEach(x => x.s.visible = true); const f = $('#fade'), nb = h.filter(x => x.bur).length, ns = h.length - nb;
+            f.innerHTML = `<h2 style="color:var(--bad)">MISSION FAILED</h2><div style="max-width:520px;padding:0 16px">The base zone sits on radioactive ground: ${ns ? ns + ' surface hot spot' + (ns > 1 ? 's' : '') : ''}${ns && nb ? ' and ' : ''}${nb ? nb + ' buried thorium/uranium deposit' + (nb > 1 ? 's' : '') : ''} inside the ${ZR} m zone. The crew would live on top of it for years and blow far past the 600 mSv career dose limit.<br><br>Always scan with thermal (T) and X-ray (R) <b>before</b> finalizing a site.</div><button onclick="location.reload()">Try again</button>`; f.classList.add('on')
+        }
+        function act() {
+            if (mo || ph < 3) return; if (ph == 6) return place();
+            if (ph == 3) {
+                const m = MK.find(k => !k.done && k.p.distanceTo(rv.p) < 6); if (!m) return toast('Drive within 6 m of a blue beacon');
+                m.done = 1; m.b.material.color.set(0x39ff88); const r = { b: Math.round(28 + Math.random() * 40), i: (3 + Math.random() * 14).toFixed(1), w: Math.round(Math.random() * 120), g: Math.round(40 + Math.random() * 70) }; m.r = r;
+                toast(`Sample: bearing ${r.b} kPa · grain ${r.g} µm · hematite ${r.i}% · water-ice ${r.w} ppm`, 6000); objT();
+                if (MK.every(k => k.done)) {
+                    const a = MK.reduce((s, k) => s + k.r.b, 0) / 4, il = MK.reduce((s, k) => s + +k.r.i, 0) / 4, w = MK.reduce((s, k) => s + k.r.w, 0) / 4;
+                    if (a >= 38) modal(`<h3>Soil verdict: APPROVED</h3><p>Mean bearing capacity <b>${a.toFixed(0)} kPa</b> (≥38 needed to carry a habitat), hematite <b>${il.toFixed(1)}%</b> (Fe₂O₃ – the iron oxide that makes Mars red; reducing it frees oxygen), ice <b>${w.toFixed(0)} ppm</b>. Fine Martian dust is abrasive and laced with toxic perchlorates, so dust control matters for seals and lungs.</p><button id="go">Core 1 ▸ Life support</button>`);
+                    else modal(`<h3>Soil verdict: TOO SOFT</h3><p>Mean bearing ${a.toFixed(0)} kPa is below 38 kPa – the habitat would settle unevenly. Relocate.</p><button id="go">Back to scouting</button>`);
+                    $('#go').onclick = () => { closeM(); if (a >= 38) { setPh(4); life() } else { scene.remove(zr); MK.forEach(k => k.b.parent.visible = false); MK = []; setPh(2) } }
+                } return
+            }
+        }
+        /* ---------- life support: control-room arcade ---------- */
+        let lifeKd = null, lifeIv = null;
+        function lifeStop() { if (lifeIv) clearInterval(lifeIv); lifeIv = null; if (lifeKd) removeEventListener('keydown', lifeKd); lifeKd = null }
+        function life() {
+            lifeStop();
+            const GS = [
+                { k: 'o2', n: 'Oxygen', ic: '💨', up: 'Electrolyze', dn: 'Vent', lo: 35, hi: 75, v: 55, c: 2.2, dr: t => -3 + 1.5 * Math.sin(t * .9) },
+                { k: 'h2o', n: 'Water', ic: '💧', up: 'Recycle', dn: 'Drain', lo: 30, hi: 80, v: 60, c: 1.6, dr: t => -2.4 + 1.2 * Math.sin(t * .6 + 1) },
+                { k: 'tmp', n: 'Cabin °C', ic: '🌡️', up: 'Heat', dn: 'Cool', lo: 38, hi: 62, v: 50, c: 1.8, dr: t => 5 * Math.sin(t * .55 + 2) },
+                { k: 'wst', n: 'Waste', ic: '♻️', up: 'Stash', dn: 'Process', lo: 10, hi: 60, v: 35, c: 1.4, dr: t => 2.6 + Math.sin(t * .7) },
+                { k: 'pwr', n: 'Power', ic: '⚡', up: 'Charge', dn: 'Shed', lo: 30, hi: 85, v: 65, c: 0, dr: t => -1.3 + 2.2 * Math.sin(t * .4 + .5) }];
+            GS.forEach(g => g.ph = Math.random() * 6.28);
+            const EV = [
+                { t: '☄ Micrometeorite puncture – oxygen is leaking!', k: 'o2', r: -9, d: 2.5 },
+                { t: '☀ Solar flare – the cabin is overheating!', k: 'tmp', r: 8, d: 3 },
+                { t: '🌫 Martian dust coats the solar panels – power sagging!', k: 'pwr', r: -7, d: 3.5 },
+                { t: '🚽 Waste tank surge!', k: 'wst', r: 9, d: 2.5 },
+                { t: '💧 Recycler clog – water is draining!', k: 'h2o', r: -8, d: 3 },
+                { t: '🌑 Martian night falls – the cabin is freezing!', k: 'tmp', r: -8, d: 3 }];
+            const DUR = 35; let t = 0, mor = 70, nx = 3, ev = null, run = 0;
+            modal(`<h3>Life support · Control room</h3><p>The base lives only while all five systems stay inside the <b style="color:var(--ok)">green band</b>. Systems drift and accidents strike. Tap the buttons (or keys <b>1–5</b> to raise, <b>Shift+1–5</b> to lower) to correct them – but every adjustment burns power ⚡. Survive ${DUR} s with crew morale above zero.</p><div class="ev" id="lsE">Standing by…</div><div class="gg">${GS.map((g, i) => `<div class="gc" id="gc${i}"><div class="gn">${g.ic} ${g.n} <span class="sm">[${i + 1}]</span></div><button data-i="${i}" data-d="1">▲ ${g.up}</button><div class="gt"><div class="bd" style="bottom:${g.lo}%;height:${g.hi - g.lo}%"></div><div class="fl" id="gf${i}" style="height:${g.v}%"></div></div><button data-i="${i}" data-d="-1">▼ ${g.dn}</button><div class="gv" id="gv${i}">${g.v}%</div></div>`).join('')}</div><div>Crew morale <span class="bar2 wide"><i id="lsM" style="width:${mor}%"></i></span> · <span id="lsT">${DUR}</span> s left</div><p class="sm">Real numbers: a crew member needs ≈0.84 kg O₂/day · the ISS recovers ≈98% of its water · Mars swings from about −125 °C at night to +20 °C by day and a sol lasts 24 h 37 min · Perseverance’s MOXIE has made O₂ straight from Martian CO₂ · Sabatier reactors turn CO₂ + H₂ into water + methane.</p><button id="go">Start shift</button>`);
+            const draw = () => {
+                GS.forEach((g, i) => { const ok = g.v >= g.lo && g.v <= g.hi, f = $('#gf' + i); f.style.height = g.v + '%'; f.style.background = ok ? '' : 'var(--bad)'; $('#gv' + i).textContent = Math.round(g.v) + '%'; $('#gc' + i).classList.toggle('bad', !ok) });
+                $('#lsM').style.width = mor + '%'; $('#lsM').style.background = mor < 30 ? 'var(--bad)' : ''; $('#lsT').textContent = Math.max(0, DUR - t).toFixed(0)
+            };
+            const pulse = (i, d) => { if (!run) return; const g = GS[i]; g.v = cl(g.v + d * 12, 0, 100); if (g.c) GS[4].v = cl(GS[4].v - g.c, 0, 100); draw() };
+            $$('#md .gc button').forEach(b => b.onpointerdown = e => { e.preventDefault(); pulse(+b.dataset.i, +b.dataset.d) });
+            const end = ok => {
+                lifeStop(); run = 0;
+                if (ok) { modal(`<h3>Shift complete ✔</h3><p>All five systems held and the crew stayed calm (morale ${mor | 0}%). Real life support is exactly this: many coupled loops, constantly nudged back into range while power is the shared budget.</p><button id="go">Continue ▸</button>`); $('#go').onclick = () => { S.o2 = 21; S.h2o = 70; S.cab = 22; closeM(); toast('Life support stable – crew can survive. Core 1 complete!', 5000); setPh(5); shield() } }
+                else { modal(`<h3>Crew morale collapsed ✘</h3><p>Too many systems stayed out of range for too long. React to the accident banner first, and remember that every adjustment costs power.</p><button id="go">Retry</button>`); $('#go').onclick = () => life() }
+            };
+            const tick = () => {
+                const dt = .05; t += dt;
+                if (t >= nx) { ev = EV[Math.random() * EV.length | 0]; ev.u = t + ev.d; nx = t + 4 + Math.random() * 3; $('#lsE').textContent = ev.t; $('#lsE').classList.add('al') }
+                if (ev && t > ev.u) { ev = null; $('#lsE').textContent = 'Situation under control…'; $('#lsE').classList.remove('al') }
+                GS.forEach(g => { let r = g.dr(t + g.ph); if (ev && ev.k == g.k) r += ev.r; g.v = cl(g.v + r * dt, 0, 100) });
+                const bad = GS.filter(g => g.v < g.lo || g.v > g.hi).length; mor = cl(mor + (bad ? -4 * bad : 6) * dt, 0, 100); draw();
+                if (mor <= 0) end(0); else if (t >= DUR) end(1)
+            };
+            $('#go').onclick = () => { run = 1; $('#go').disabled = true; lifeKd = e => { const m = /^Digit([1-5])$/.exec(e.code); if (m) { e.preventDefault(); pulse(+m[1] - 1, e.shiftKey ? -1 : 1) } }; addEventListener('keydown', lifeKd); lifeIv = setInterval(tick, 50) }
+        }
+        /* ---------- radiation ---------- */
+        const gk2 = document.createElement('canvas'); gk2.width = gk2.height = 64; { const x = gk2.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, '#fff'); g.addColorStop(.3, 'rgba(200,110,255,.75)'); g.addColorStop(1, 'rgba(140,40,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64) }
+        const glow2 = new T.CanvasTexture(gk2);
+        function spawnHS() {
+            HS = []; const n = 7, a0 = Math.random() * 6.28;
+            for (let i = 0; i < n; i++) {
+                const bur = i % 2 == 1, r = 5 + Math.random() * 2.5, p = off(P0, i == 0 ? 32 + Math.random() * 10 : 30 + Math.random() * 65, a0 + i * (6.28 / n) + (Math.random() - .5) * .5),
+                    s = new T.Sprite(new T.SpriteMaterial({ map: bur ? glow2 : glow, blending: T.AdditiveBlending, depthWrite: false, depthTest: !bur, transparent: true, fog: false }));
+                s.scale.set(r * 3.4, r * 3.4, 1); s.renderOrder = bur ? 20 : 0; s.position.copy(p).addScaledVector(p.clone().normalize(), bur ? -1.5 : 2); s.visible = false; scene.add(s); HS.push({ p, s, r, bur })
+            }
+        }
+        function shield() {
+            modal(`<h3>Radiation shielding</h3><p>Reference (NASA Curiosity RAD dosimetry): an unshielded Martian surface gives ≈0.67 mSv/day, about 1.3× the ISS – the thin CO₂ air helps only a little. NASA’s career limit is 600 mSv. Regolith stops most primary cosmic rays, but too little leaves you exposed while piling it too high wastes power and robot-hours (and creates secondary neutrons). Target: ≤0.20 mSv/day with 1.4–2.6 m.</p><label>Regolith thickness <input id="sl" type="range" min="0" max="40" value="5"></label><div id="st"></div><button id="go">Build berm</button>`);
+            const up = () => { const t = $('#sl').value / 10, d = .67 * (.18 + .82 * Math.exp(-t / .7)); $('#st').innerHTML = `${t.toFixed(1)} m → <b>${d.toFixed(2)} mSv/day</b> · ${(d * 365).toFixed(0)} mSv/yr · ${(t * 40).toFixed(0)} robot-hours`; return [t, d] }; $('#sl').oninput = up; up();
+            $('#go').onclick = () => { const [t, d] = up(); if (d > .2) return toast('Too thin – dose still above 0.20 mSv/day'); if (t > 2.6) return toast('Over-engineered – wasting regolith and power'); S.dose = +d.toFixed(2); closeM(); toast('Core 2 complete – shielding in place!', 5000); setPh(6) }
+        }
+        /* ---------- base building (builder bots) ---------- */
+        const BL = [['hab', '🏠', 'Habitat', -6], ['sol', '☀️', 'Solar array', 12], ['isru', '⚗️', 'ISRU plant', -8], ['gre', '🌱', 'Greenhouse', -4], ['com', '📡', 'Comms', -1], ['lab', '🔬', 'Lab', -3], ['bm', '⛰️', 'Regolith berm', 0]], cnt = {}, dn = {}, BN = {},
+            Q = { hab: 1, sol: 2, isru: 1, gre: 1, com: 1, lab: 1, bm: 1 }, RAD = { hab: 6.5, sol: 3.2, isru: 3.4, gre: 3.5, com: 2.2, lab: 3, bm: 4 }, TOTAL = 8;
+
+        /* FIX: Glass increased from 50 to 85 so all 8 required modules (total: 68 wood, 95 stone, 75 glass, 40 water) can be built */
+        const MAT = { wood: 80, stone: 100, glass: 85, water: 60 };
+
+        const COST = {
+            hab:  { wood: 20, stone: 15, glass: 10, water:  5 },
+            sol:  { wood:  5, stone:  5, glass: 15, water:  0 },
+            isru: { wood:  8, stone: 20, glass:  5, water: 10 },
+            gre:  { wood: 15, stone:  5, glass: 12, water: 20 },
+            com:  { wood:  5, stone: 10, glass:  8, water:  0 },
+            lab:  { wood: 10, stone: 10, glass: 10, water:  5 },
+            bm:   { wood:  0, stone: 25, glass:  0, water:  0 }
+        };
+
+        function costLabel(k) {
+            const c = COST[k]; if (!c) return '';
+            const parts = [];
+            if (c.wood)  parts.push(`🪵${c.wood}`);
+            if (c.stone) parts.push(`🪨${c.stone}`);
+            if (c.glass) parts.push(`🪟${c.glass}`);
+            if (c.water) parts.push(`💧${c.water}`);
+            return parts.join(' ');
+        }
+
+        function canAfford(k) {
+            const c = COST[k]; if (!c) return true;
+            return MAT.wood >= (c.wood||0) && MAT.stone >= (c.stone||0) && MAT.glass >= (c.glass||0) && MAT.water >= (c.water||0);
+        }
+
+        function deductMat(k) {
+            const c = COST[k]; if (!c) return;
+            MAT.wood  -= (c.wood  || 0);
+            MAT.stone -= (c.stone || 0);
+            MAT.glass -= (c.glass || 0);
+            MAT.water -= (c.water || 0);
+            updMat();
+        }
+
+        function updMat() {
+            const keys = ['wood','stone','glass','water'];
+            keys.forEach(m => {
+                const el = document.getElementById('m_' + m);
+                if (el) { el.textContent = MAT[m]; el.className = MAT[m] < 10 ? 'low' : ''; }
+            });
+            updPalAfford();
+        }
+
+        function updPalAfford() {
+            BL.forEach(b => {
+                const k = b[0], btn = document.querySelector('#pal button[data-k="' + k + '"]');
+                if (!btn) return;
+                const over = (cnt[k] || 0) >= Q[k];
+                const afford = canAfford(k);
+                btn.disabled = over || !afford;
+                btn.title = over ? 'Quota complete' : (!afford ? 'Not enough materials!' : '');
+            });
+        }
+        BL.forEach(b => BN[b[0]] = b[2]);
+        $('#pal').innerHTML = BL.map(b => `<button data-k="${b[0]}">${b[1]} <span class="nm">${b[2]}</span> <span class="sm">${b[3] > 0 ? '+' : ''}${b[3]} kW</span> <b id="n_${b[0]}">0/${Q[b[0]]}</b><span class="cost">${costLabel(b[0])}</span></button>`).join('');
+        const gm = new T.MeshBasicMaterial({ color: 0x39ff88, transparent: true, opacity: .42, depthWrite: false, fog: false }), rc = new T.Raycaster();
+        function updPal() {
+            BL.forEach(b => {
+                const k = b[0];
+                $('#n_' + k).textContent = `${dn[k] || 0}/${Q[k]}${(cnt[k] || 0) > (dn[k] || 0) ? ' ⏳' : ''}`;
+            });
+            updPalAfford();
+        }
+        function bad(k, p) { if (p.distanceTo(ZC) > ZR - 1) return 'Place it inside the green zone'; if ((cnt[k] || 0) >= Q[k]) return `All ${BN[k]} modules already ordered`; for (const q of BL_) if (q[1].distanceTo(p) < (RAD[k] + RAD[q[0]]) * .85) return 'Too close to another module'; return '' }
+        function freeSpot(k) { for (let i = 0; i < 40; i++) { const p = off(ZC, i * .5, i * 2.4); if (!bad(k, p)) return p } return ZC.clone() }
+        function showPI(k) { const e = $('#pi'); if (!k) { e.classList.remove('show'); e.textContent = ''; return } const b = BL.find(x => x[0] == k); e.innerHTML = `${b[1]} <b>${b[2]}</b> · ${b[3] > 0 ? '+' : ''}${b[3]} kW · <span style="color:var(--ac)">${costLabel(k)}</span>`; e.classList.add('show') }
+        function setSel(k) {
+            sel = k; showPI(k); $$('#pal button').forEach(x => x.classList.toggle('on', x.dataset.k == k)); if (ghost) { scene.remove(ghost); ghost = null } if (!k) return;
+            ghost = mod(k); ghost.traverse(m => { if (m.isMesh) { m.material = gm; m.castShadow = m.receiveShadow = false } }); scene.add(ghost); gyaw = 0; gp.copy(freeSpot(k))
+        }
+        $$('#pal button').forEach(b => b.onclick = () => { if (ph != 6 || mo) return; setSel(b.dataset.k) });
+        function rotG() { gyaw += .6 }
+
+        function groundAt(cx, cy) {
+            rc.setFromCamera({ x: cx / innerWidth * 2 - 1, y: -(cy / innerHeight * 2 - 1) }, camera);
+            const o = rc.ray.origin, d = rc.ray.direction, b = o.dot(d), c = o.lengthSq() - (R + 9) * (R + 9), disc = b * b - c; if (disc < 0) return null;
+            const q = V(), hg = t => { q.copy(d).multiplyScalar(t).add(o); const L = q.length(); return L - (R + H(q.clone().divideScalar(L))) };
+            let t = Math.max(0, -b - Math.sqrt(disc)), prev = t;
+            for (let i = 0; i < 700; i++) {
+                if (hg(t) < 0) { let a = prev, e = t; for (let j = 0; j < 12; j++) { const m = (a + e) / 2; if (hg(m) < 0) e = m; else a = m } q.copy(d).multiplyScalar(e).add(o); return surf(q) }
+                prev = t; t += .6; if (t > 600) break
+            }
+            return null
+        }
+        function pickDrag(e) {
+            rc.setFromCamera({ x: e.clientX / innerWidth * 2 - 1, y: -(e.clientY / innerHeight * 2 - 1) }, camera);
+            const h = rc.intersectObjects(BOTS.map(b => b.hp), false)[0]; if (h) return { bot: BOTS.find(b => b.hp === h.object) };
+            if (ghost && rc.intersectObject(ghost, true)[0]) return { ghost: 1 }; return null
+        }
+        function click(e) {
+            if (ph != 6 || mo) return; const p = groundAt(e.clientX, e.clientY); if (!p) return;
+            if (sel && ghost) gp.copy(p); else { const b = BOTS.find(b => b.sel); if (b) { b.goto = p; toast('Builder moving there') } }
+        }
+        function place() {
+            if (ph != 6 || mo) return; if (!sel || !ghost) return toast('Pick a module in the top bar, drag the ghost where you want it, then press Place');
+            const k = sel, w = bad(k, gp); if (w) return toast(w);
+            if (!canAfford(k)) {
+                const c = COST[k];
+                return toast(`Not enough materials! Need: 🪵${c.wood||0} 🪨${c.stone||0} 🪟${c.glass||0} 💧${c.water||0}`);
+            }
+            deductMat(k);
+            const o = mod(k); stand(o, gp, gyaw); o.scale.set(1, .04, 1); scene.add(o);
+            const sp = new T.Sprite(new T.SpriteMaterial({ map: glow, blending: T.AdditiveBlending, depthWrite: false, transparent: true, fog: false })); sp.scale.set(4, 4, 1); sp.position.copy(gp).addScaledVector(gp.clone().normalize(), 2); sp.visible = false; scene.add(sp);
+            JOBS.push({ k, p: gp.clone(), o, sp, prog: 0, who: null, done: 0 }); BL_.push([k, gp.clone()]); cnt[k] = (cnt[k] || 0) + 1; setSel(null); updPal(); toast(`${BN[k]} ordered – a builder will set it up`)
+        }
+        function finish(j) {
+            j.done = 1; j.o.scale.y = 1; j.sp.visible = false; BOTS.forEach(b => { if (b.job === j) b.job = null }); j.who = null; dn[j.k] = (dn[j.k] || 0) + 1; S.pwr += BL.find(b => b[0] == j.k)[3]; if (j.k == 'hab') S.crew = 4;
+            toast(`✔ ${BN[j.k]} complete`); updPal();
+            if (Object.keys(Q).every(k => (dn[k] || 0) >= Q[k])) { $('#bF').style.display = ''; toast('All modules built – press “Finalize Build” to complete the mission!', 7000) }
+        }
+        function finalize() { if (ph != 6 || mo) return; if (S.pwr < 0) return toast('Power deficit! Add more solar arrays.'); win() }
+        function win() {
+            modal(`<h3>Base online ✔ – mission success</h3><p>${BL_.length} modules built by your builder crew · crew ${S.crew} · power surplus ${S.pwr} kW · radiation ${S.dose} mSv/day. You scanned for radioactive ground, kept life support in balance, shielded against radiation and built a base – hard engineering, done by doing.</p><button id="go">Finish mission</button>`);
+            $('#go').onclick = () => { closeM(); const f = $('#fade'); f.innerHTML = `<h2>ARES BASE – ONLINE</h2><div>Crew ${S.crew} · ${S.pwr} kW surplus · ${S.dose} mSv/day</div><button onclick="novaExit(4)">MISSION MENU →</button>`; f.classList.add('on'); setPh(7) }
+        }
+        /* little builder guys */
+        function mkBot(col) {
+            const g = new T.Group(), W = M(0xf4f4f4, .2, .5), C = M(col, .3, .4, { emissive: col, emissiveIntensity: .45 }), Gy = M(0x6a7280, .6, .4);
+            const mkL = x => { const p = new T.Group(); p.position.set(x, .55, 0); mesh(p, cyl(.14, .55, 8), W, 0, -.27, 0); mesh(p, bx(.26, .12, .38), Gy, 0, -.55, .06); g.add(p); return p };
+            const mkA = x => { const p = new T.Group(); p.position.set(x, 1.2, 0); mesh(p, cyl(.09, .5, 8), W, 0, -.24, 0); g.add(p); return p };
+            const lL = mkL(-.17), lR = mkL(.17), aL = mkA(-.42), aR = mkA(.42);
+            mesh(g, cyl(.3, .7, 12), W, 0, .92, 0); mesh(g, cyl(.32, .14, 12), C, 0, .72, 0); mesh(g, bx(.45, .55, .26), Gy, 0, .98, -.3); mesh(g, new T.SphereGeometry(.28, 14, 12), W, 0, 1.52, 0);
+            const vz = mesh(g, new T.SphereGeometry(.2, 12, 10), M(0xd9a441, .9, .15), 0, 1.54, .15); vz.scale.set(1, .7, .6);
+            const mk = new T.Mesh(new T.ConeGeometry(.24, .55, 10), new T.MeshBasicMaterial({ color: col, toneMapped: false, fog: false })); mk.rotation.x = Math.PI; mk.position.y = 2.7; mk.visible = false; g.add(mk);
+            const hp = new T.Mesh(new T.SphereGeometry(1.5, 8, 6), new T.MeshBasicMaterial({ visible: false })); hp.position.y = 1; g.add(hp); g.scale.setScalar(1.3);
+            return { g, lL, lR, aL, aR, mk, hp, p: V(), f: V(1, 0, 0), w: 0, sel: 0, job: null, goto: null, home: null, work: 0, sp: 0 }
+        }
+        function orient(o, p, f) {
+            const u = p.clone().normalize(), ff = f.clone().addScaledVector(u, -f.dot(u)); if (ff.lengthSq() < 1e-6) { ff.set(1, 0, 0).addScaledVector(u, -u.x) } ff.normalize();
+            o.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(u.clone().cross(ff), u, ff)); o.position.copy(p).addScaledVector(u, .05)
+        }
+        const BCOL = [0x40c8ff, 0xffa63a, 0x7dff6a];
+        $('#bots').innerHTML = '<span class="sm">Builders</span>' + BCOL.map((c, i) => `<button data-b="${i}" style="border-color:#${c.toString(16)}">🧑‍🚀 ${i + 1}</button>`).join('') + '<span class="sm">WASD / drag</span>';
+        function selBot(i) { BOTS.forEach((b, j) => { b.sel = j == i ? 1 : 0; b.mk.visible = j == i }); $$('#bots button').forEach(x => x.classList.toggle('on', +x.dataset.b == i)) }
+        $$('#bots button').forEach(b => b.onclick = () => { if (ph == 6 && BOTS.length) selBot(+b.dataset.b) });
+        function startBuild() {
+            $('#bF').style.display = 'none';
+            if (!BOTS.length) BCOL.forEach((c, i) => { const b = mkBot(c); b.p = off(P0, 3 + i * 2.2, i * 2.1); b.home = off(ZC, 3 + i * 2.2, i * 2.1 + .5); b.f = b.home.clone().sub(b.p); scene.add(b.g); BOTS.push(b) });
+            selBot(0); setSel(null); updPal(); updMat(); toast('Builders are leaving the lander and heading to your site – choose what to build!', 6000)
+        }
+        function botsUpdate(dt) {
+            if (ph == 6 && dg && dg.o && dg.mv) { dg.mv = 0; const p = groundAt(dg.x, dg.y); if (p) { if (dg.o.ghost) gp.copy(p); else { dg.o.bot.p.copy(p); dg.o.bot.goto = null } } }
+            if (ghost) { stand(ghost, gp, gyaw); gm.color.set(bad(sel, gp) ? 0xff4040 : 0x39ff88) }
+            if (!BOTS.length) return;
+            if (ph == 6) JOBS.forEach(j => { if (!j.done && !j.who) { let best = null, bd = 1e9; BOTS.forEach(b => { if (!b.job) { const d = b.p.distanceTo(j.p); if (d < bd) { bd = d; best = b } } }); if (best) { best.job = j; j.who = best } } });
+            BOTS.forEach(b => {
+                let dir = null, sp = 0, mag = 1; const u = b.p.clone().normalize(); b.work = 0;
+                if (ph == 6 && !mo && b.sel && (mv.f || mv.t)) { dir = CF.clone().multiplyScalar(mv.f).addScaledVector(CRT, mv.t); mag = Math.min(1, dir.length()); sp = 6.5; b.goto = null }
+                else {
+                    let tg = null, stop = 1;
+                    if (b.job && ph == 6) { tg = b.job.p; stop = RAD[b.job.k] * .6 + 2 } else if (b.goto) { tg = b.goto; stop = .8 } else if (ph >= 6 && b.home) { tg = b.home; stop = 1.2 }
+                    if (tg) { if (b.p.distanceTo(tg) > stop) { dir = tg.clone().sub(b.p); sp = 6 } else if (b.goto && !b.job) b.goto = null }
+                }
+                b.sp = 0;
+                if (dir) { dir.addScaledVector(u, -dir.dot(u)); if (dir.lengthSq() > 1e-6) { dir.normalize(); b.sp = sp * mag; b.p.addScaledVector(dir, b.sp * dt); b.p = surf(b.p); b.f.lerp(dir, Math.min(1, dt * 10)); b.w += b.sp * dt } }
+            });
+            if (ph == 6) JOBS.forEach(j => {
+                if (j.done) return; let n = 0; BOTS.forEach(b => { if (b.p.distanceTo(j.p) < RAD[j.k] * .6 + 3.4) { n++; b.work = 1 } });
+                if (n) j.prog += dt * Math.min(n, 3) / 7; j.o.scale.y = .04 + .96 * Math.min(1, j.prog); j.sp.visible = n > 0; j.sp.material.opacity = .5 + .5 * Math.random(); if (j.prog >= 1) finish(j)
+            });
+            BOTS.forEach((b, i) => {
+                const u = b.p.clone().normalize(); orient(b.g, b.p, b.f); const mvg = b.sp > .1 ? 1 : 0;
+                b.lL.rotation.x = Math.sin(b.w * 2.2) * .8 * mvg; b.lR.rotation.x = -b.lL.rotation.x; b.aL.rotation.x = -b.lL.rotation.x * .8; b.aR.rotation.x = b.lL.rotation.x * .8;
+                if (b.work) b.aR.rotation.x = -1.3 + Math.sin(T_ * 14 + i) * .7;
+                if (ph >= 7) { b.g.position.addScaledVector(u, Math.abs(Math.sin(T_ * 5 + i)) * .6); b.aL.rotation.x = b.aR.rotation.x = -2.6 }
+                if (b.mk.visible) b.mk.position.y = 2.7 + Math.sin(T_ * 4) * .12
+            })
+        }
+        updPal();
+        /* ---------- input ---------- */
+        const K = {}; addEventListener('keydown', e => { if (e.target.tagName == 'INPUT') return; const k = e.key.toLowerCase(); K[k] = 1; if (mo) return; if (k == 'b') deploy(); if (k == 'r') xray(); if (k == 't') therm(); if (k == 'e') act(); if (ph == 6) { if (k == 'p') place(); if (k == 'z') rotG(); if (k == '1' || k == '2' || k == '3') selBot(+k - 1) } }); addEventListener('keyup', e => K[e.key.toLowerCase()] = 0);
+        $('#bD').onclick = deploy; $('#bR').onclick = xray; $('#bT').onclick = therm; $('#bE').onclick = act; $('#bS').onclick = selSite; $('#bP').onclick = place; $('#bZ').onclick = rotG; $('#bF').onclick = finalize;
+        const js = $('#js'), kn = $('#kn'); let jd = 0; if (!('ontouchstart' in window)) js.style.display = 'none';
+        function jm(e) { const r = js.getBoundingClientRect(), dx = e.clientX - r.left - r.width / 2, dy = e.clientY - r.top - r.height / 2, m = Math.min(1, Math.hypot(dx, dy) / 45), a = Math.atan2(dy, dx); jt = Math.cos(a) * m; jf = -Math.sin(a) * m; kn.style.transform = `translate(${Math.cos(a) * m * 40}px,${Math.sin(a) * m * 40}px)` }
+        js.onpointerdown = e => { jd = 1; js.setPointerCapture(e.pointerId); jm(e) }; js.onpointermove = e => jd && jm(e); js.onpointerup = js.onpointercancel = () => { jd = 0; jf = jt = 0; kn.style.transform = '' };
+        let dg = null; cv.addEventListener('pointerdown', e => { dg = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now(), o: (ph == 6 && !mo) ? pickDrag(e) : null }; cv.setPointerCapture(e.pointerId); if (dg.o && dg.o.bot) selBot(BOTS.indexOf(dg.o.bot)) });
+        cv.addEventListener('pointermove', e => { if (!dg) return; if (dg.o) { dg.x = e.clientX; dg.y = e.clientY; dg.mv = 1; return } camY += (e.clientX - dg.x) * .006; if (ph != 2) tP = cl(tP + (e.clientY - dg.y) * .005, .06, 1.5); dg.x = e.clientX; dg.y = e.clientY });
+        cv.addEventListener('pointerup', e => { if (dg && !dg.o && Math.hypot(e.clientX - dg.x0, e.clientY - dg.y0) < 6 && performance.now() - dg.t < 400) click(e); dg = null });
+        cv.addEventListener('pointercancel', () => { dg = null });
+        cv.addEventListener('wheel', e => { tD = cl(tD * (1 + e.deltaY * .001), 6, 120) });
+        /* ---------- HUD ---------- */
+        const ROWS = [['lat', 'LAT', '°'], ['lon', 'LON', '°'], ['spd', 'SPEED', 'm/s'], ['slp', 'SLOPE', '°'], ['tmp', 'ROVER', '°C'], ['rad', 'RAD', 'µSv/h'], ['o2', 'O₂', '%', 1], ['h2o', 'H₂O', 'L', 1], ['cab', 'CABIN', '°C', 1], ['pwr', 'POWER', 'kW', 1], ['dose', 'DOSE', 'mSv/d', 1], ['crew', 'CREW', '', 1]];
+        $('#tr').innerHTML = ROWS.map(([k, l, u, e]) => `<div>${l} <b data-k="${k}" class="${e ? 'ed' : ''}"></b> ${u}</div>`).join('');
+        const E = {}; $$('[data-k]').forEach(b => { if (b.tagName == 'B') E[b.dataset.k] = b });
+        const LIM = { en: [0, 100], o2: [0, 40], h2o: [0, 500], cab: [-50, 80], pwr: [-99, 99], dose: [0, 5], crew: [1, 12] };
+        function edit(b) { const k = b.dataset.k, i = document.createElement('input'); i.value = S[k]; i.className = 'in'; b.replaceWith(i); i.focus(); i.select(); let d = 0; const fin = () => { if (d) return; d = 1; const v = parseFloat(i.value); if (!isNaN(v)) S[k] = cl(v, ...LIM[k]); i.replaceWith(b) }; i.onblur = fin; i.onkeydown = e => { e.stopPropagation(); if (e.key == 'Enter') fin() } }
+        document.body.addEventListener('click', e => { const b = e.target.closest('.ed'); if (!b) return; const n = performance.now(); if (n - (b._t || 0) < 400) edit(b); b._t = n });
+        setInterval(() => { if (ph == 6) objT(); for (const k in E) { const v = S[k]; E[k].textContent = Math.round(v * 10) / 10 } $('#fe').style.width = S.en + '%'; $('#fs').style.width = S.sig + '%'; $('#fe').style.background = S.en < 20 ? '#ff6a5a' : ''; $('#fs').style.background = S.sig < 30 ? '#ff6a5a' : '' }, 120);
+        /* ---------- main loop ---------- */
+        function cam(dt) {
+            const k = 1 - Math.pow(.02, dt); camP += (tP - camP) * k; camD += (tD - camD) * k;
+            const fp = ph >= 6 && ZC ? ZC : rv.p, fc = ph < 2 ? lander.position.clone().addScaledVector(U0, 8) : fp.clone().addScaledVector(fp.clone().normalize(), 1.2), u = fc.clone().normalize(), f = ph < 2 ? f0 : rv.f, r = u.clone().cross(f).normalize(), cp = Math.cos(camP);
+            const d = f.clone().multiplyScalar(-Math.cos(camY) * cp).addScaledVector(r, Math.sin(camY) * cp).addScaledVector(u, Math.sin(camP));
+            CF.copy(d).addScaledVector(u, -d.dot(u)).negate().normalize(); CRT.copy(CF).cross(u); camera.position.copy(fc).addScaledVector(d, camD); const mn = R + H(camera.position.clone().normalize()) + 1.5; if (camera.position.length() < mn) camera.position.setLength(mn); camera.up.copy(u); camera.lookAt(fc); FC = fc
+        }
+
+        /* ---------- drifting Martian dust (GPU-animated, world-fixed so it streams past as you move) ---------- */
+        const DUST_N = 1300, DUST_BOX = 110;
+        const dustMat = new T.ShaderMaterial({
+            transparent: true, depthWrite: false, fog: false,
+            uniforms: { uTime: { value: 0 }, uPx: { value: 900 }, uBox: { value: DUST_BOX }, uSE: { value: 0 }, uSN: { value: 0 }, uCol: { value: new T.Color(0xeab48a) }, uOp: { value: .6 } },
+            vertexShader: 'attribute float aSize; attribute float aPh; uniform float uTime,uPx,uBox,uSE,uSN; varying float vA; void main(){ float t=uTime; vec3 p=position; p.x+=t*2.4+sin(t*.5+aPh*40.)*1.6-uSE; p.z+=t*.9+cos(t*.4+aPh*23.)*1.4-uSN; p.y+=sin(t*.7+aPh*31.)*.9; p.x=mod(p.x,uBox)-uBox*.5; p.z=mod(p.z,uBox)-uBox*.5; p.y=mod(p.y+3.,40.)-3.; vec4 mv=modelViewMatrix*vec4(p,1.); float d=-mv.z; gl_Position=projectionMatrix*mv; gl_PointSize=clamp(aSize*uPx/max(d,.1),1.,42.); vA=(1.-smoothstep(30.,75.,d))*smoothstep(1.,4.,d); }',
+            fragmentShader: 'uniform vec3 uCol; uniform float uOp; varying float vA; void main(){ float r=length(gl_PointCoord-.5); float a=smoothstep(.5,.05,r)*vA*uOp; if(a<.01) discard; gl_FragColor=vec4(uCol,a); }'
+        });
+        const dustG = new T.BufferGeometry(), dP = new Float32Array(DUST_N * 3), dS = new Float32Array(DUST_N), dH = new Float32Array(DUST_N);
+        for (let i = 0; i < DUST_N; i++) { dP.set([Math.random() * DUST_BOX, Math.pow(Math.random(), 1.6) * 40 - 3, Math.random() * DUST_BOX], i * 3); dS[i] = .12 + Math.random() * .38; dH[i] = Math.random() }
+        dustG.setAttribute('position', new T.BufferAttribute(dP, 3)); dustG.setAttribute('aSize', new T.BufferAttribute(dS, 1)); dustG.setAttribute('aPh', new T.BufferAttribute(dH, 1));
+        const dust = new T.Points(dustG, dustMat); dust.frustumCulled = false; dust.renderOrder = 5; scene.add(dust);
+        const _dm = new T.Matrix4(), _fc = new T.Color();
+        function atmos(t) {
+            const cu = camera.position.clone().normalize(), e = cu.dot(LD), d = cl((e + .12) / .42, 0, 1), dd = d * d * (3 - 2 * d);
+            _fc.lerpColors(FOG_NIGHT, FOG_DAY, dd); scene.fog.color.copy(_fc); skyMat.uniforms.uHor.value.copy(_fc); skyMat.uniforms.uZen.value.lerpColors(ZEN_NIGHT, ZEN_DAY, dd);
+            skyMat.uniforms.uUp.value.copy(cu); skyMat.uniforms.uDay.value = dd; sky.position.copy(camera.position);
+            starMat.opacity = cl(1 - dd * 1.6, 0, 1); hemi.intensity = .1 + .4 * dd;
+            /* dust cloud: centred between camera and focus, riding the local surface frame (north = z, east = x) */
+            const dv = camera.position.clone().sub(FC), fu = FC.clone().normalize(); dv.addScaledVector(fu, -dv.dot(fu));
+            const o = FC.clone().addScaledVector(dv, .5), u = o.clone().normalize(), nz = V(0, 1, 0).addScaledVector(u, -u.y).normalize(), nx = u.clone().cross(nz);
+            dust.position.copy(o); dust.quaternion.setFromRotationMatrix(_dm.makeBasis(nx, u, nz));
+            const lat = Math.asin(u.y), lon = Math.atan2(u.z, u.x), U = dustMat.uniforms;
+            U.uSE.value = R * Math.cos(lat) * lon; U.uSN.value = R * lat; U.uTime.value = t; U.uPx.value = ren.domElement.height / (2 * Math.tan(camera.fov * Math.PI / 360));
+            U.uCol.value.lerpColors(new T.Color(0x2a1a14), new T.Color(0xeab48a), dd); U.uOp.value = .25 + .4 * dd
+        }
+        let last = performance.now(), fc_ = 0;
+        function step(dt) {
+            if (on) T_ += dt;
+            const gp = navigator.getGamepads ? navigator.getGamepads()[0] : null; let gf = 0, gt = 0;
+            if (gp) { const a = gp.axes, dz = v => Math.abs(v) < .18 ? 0 : v; gt = dz(a[0]); gf = -dz(a[1]); camY -= dz(a[2]) * dt * 2; if (ph != 2) tP = cl(tP + dz(a[3]) * dt * 1.2, .06, 1.5); const b = gp.buttons.map(x => x.pressed); if (b[0] && !gb[0]) act(); if (b[1] && !gb[1]) deploy(); if (b[2] && !gb[2]) xray(); if (b[3] && !gb[3]) therm(); gb = b }
+            mv.f = cl(((K.w || K.arrowup) ? 1 : 0) - ((K.s || K.arrowdown) ? 1 : 0) + jf + gf, -1, 1); mv.t = cl(((K.d || K.arrowright) ? 1 : 0) - ((K.a || K.arrowleft) ? 1 : 0) + jt + gt, -1, 1); if (mo) mv.f = mv.t = 0;
+            if (ph < 2) camY += dt * .1;
+            if (ph == 0) { const t = Math.min(1, T_ / 11), a = 140 * (1 - t) * (1 - t); pose(lander, P0, f0, 4.6 * LS, 4.6 * LS); lander.position.addScaledVector(U0, a); fl.visible = a > .5; fl.scale.y = .8 + Math.random() * .5; pl.intensity = fl.visible ? 3 : 0; if (on && t >= 1) { setPh(1); toast('Touchdown! Engines off.') } }
+            let f = 0;
+            if (dep >= 0) { dep += dt; const q = cl(dep / 2.4, 0, 1), e = q * q * (3 - 2 * q); flap.rotation.x = -(Math.PI - PHI) * e }
+            if (auto > 0) { auto -= dt; if (auto <= 0) { auto = 0; dep = -1; bayL.intensity = 0; toast('Rover ready. WASD / stick to drive, drag to look. Scan for radiation with T (thermal) and R (X-ray) BEFORE choosing a site.', 7000); setPh(2) } }
+            if (rover.visible) {
+                const run = ph >= 2 && ph < 6 && !mo && S.en > 0; f = auto > 0 ? (dep < 2.6 ? 0 : .4) : (run ? mv.f : 0); const tn = auto > 0 ? 0 : (run ? mv.t : 0), u = rv.p.clone().normalize(), sp = f * 9 * (S.sig < 15 ? .5 : 1);
+                rv.f.applyAxisAngle(u, -tn * 1.5 * dt); rv.p.addScaledVector(rv.f, sp * dt); rv.p = surf(rv.p); const u2 = rv.p.clone().normalize(); rv.f.addScaledVector(u2, -rv.f.dot(u2)).normalize();
+                pose(rover, rv.p, rv.f);
+                if (dep >= 0) {
+                    const d = rv.p.distanceTo(P0), hg = 2.08 * LS, run2 = 4.16 * LS * Math.cos(PHI), onR = d > hg && d < hg + run2;
+                    rover.position.addScaledVector(u2, d <= hg ? H0 : onR ? H0 * (1 - (d - hg) / run2) : 0);
+                    if (onR) rover.rotateX(PHI);
+                }
+                wheels.forEach(w => w.rotation.x += sp * dt / .55); S.spd = Math.abs(sp)
+            }
+            const u = (rover.visible ? rv.p : P0).clone().normalize(); const ue = U0.clone().add(u.clone().sub(U0).multiplyScalar(RK)).normalize(); /* same sun/signal change per metre as the original smaller world */ S.sun = cl(ue.dot(LD), 0, 1) * 100; S.sig = cl((ue.dot(ED) + .15) / .5, 0, 1) * 100; S.lat = Math.asin(u.y) * 57.3; S.lon = Math.atan2(u.z, u.x) * 57.3; S.tmp = Math.round(-90 + 110 * Math.min(1, S.sun / 60));
+            if (ph >= 2 && ph < 6 && auto == 0) S.en = cl(S.en + dt * (.12 + .35 * S.sun / 100 - .7 * Math.abs(f) - .04), 0, 100);
+            if (ph >= 2 && rover.visible && !(fc_++ % 4)) S.slp = slope(rv.p, rv.f);
+            if (ph == 2) { siteOK = S.slp < 4 && S.sig >= 50 && S.sun >= 20; if (fc_ % 6 == 0) { fill(sr, rv.p, ZR) } sr.material.color.set(siteOK ? 0x39ff88 : 0xff4040) }
+            if (rover.visible) { let r = .05; HS.forEach(h => { const d = h.p.distanceTo(rv.p); r += 30 / (1 + d * d / 30) }); S.rad = r } else S.rad = .05;
+            if (rover.visible && ph == 2) { if (th && (!thPts.length || thPts[thPts.length - 1].distanceTo(rv.p) > 4)) thPts.push(rv.p.clone()); if (rev && (!xrPts.length || xrPts[xrPts.length - 1].distanceTo(rv.p) > 4)) xrPts.push(rv.p.clone()) }
+            HS.forEach(h => { h.s.material.opacity = .7 + .3 * Math.sin(T_ * 5) });
+            botsUpdate(dt); cam(dt); atmos(performance.now() / 1000); sun.position.copy(FC).addScaledVector(LD, 150); sun.target.position.copy(FC); sun.target.updateMatrixWorld()
+        }
+        function loop(now) { requestAnimationFrame(loop); const dt = Math.min(.05, (now - last) / 1000); last = now; try { step(dt); ren.render(scene, camera) } catch (err) { console.error('Ares Base runtime error:', err); toast('Simulation error – open the browser console for details.', 6000); throw err } }
+        function begin() { closeM(); on = 1; try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => { }) } catch (e) { } objT() }
+        spawnHS(); setPh(0); $('#bD').style.display = 'none';
+        modal(`<h3>ARES BASE – Mars Base Mission</h3><p>Land on Mars, scout flat sunlit ground, <b>scan it for radioactive rock</b>, study the soil, keep the crew alive in the life-support control room, shield them and let your builder bots set up the base.</p><p><b>Drive:</b> WASD / left stick / on-screen joystick · <b>Camera:</b> drag, wheel, right stick · <b>B</b> deploy · <b>R</b> X-ray (shows buried ore) · <b>T</b> thermal scan (shows surface hot spots) · <b>E</b> action · double-click glowing HUD values to edit them.</p><p><b>Building:</b> pick a module, drag its ghost (or click the ground), press <b>Place (P)</b>. Builders walk over and construct it – move them with <b>WASD</b> (1–3 to switch) or drag them. When everything is built, press <b>Finalize Build</b>.</p><p class="sm">Terrain is procedural (Cesium ion cannot load inside a hosted page). Science values are embedded NASA OSDR/RadLab reference figures.</p><button id="go">Begin mission</button>`);
+        $('#go').onclick = begin; requestAnimationFrame(loop);
+        })();
+    </script>
+</body>
+
+</html>
